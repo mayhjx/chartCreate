@@ -1,0 +1,139 @@
+using System;
+using System.Collections.Generic;
+using Excel = Microsoft.Office.Interop.Excel;
+using System.Runtime.InteropServices;
+using System.Linq;
+
+static class Program
+{
+	static void Main()
+	{
+		
+		Excel.Application app=null;
+		Excel.Workbook wb=null;
+		Excel.Worksheet ws=null;
+		
+		try
+		{
+			// // get the Exists Excel Application 
+			app = (Excel.Application) Marshal.GetActiveObject("Excel.Application");
+		}
+		catch (Exception e)
+		{
+			Console.WriteLine(e);
+			Console.ReadKey();
+			// // Create a new Excel Application
+			// app = new Excel.Application();
+			// app.Visible = true;
+			// app.Workbooks.Add();
+			// Marshal.ReleaseComObject(ws);
+			// Marshal.ReleaseComObject(wb);
+			// Marshal.ReleaseComObject(app);
+			return;
+		}
+		
+		
+		if (app == null)
+		{
+			Console.WriteLine("Can Not Create Excel Application.");
+			return;
+		}
+		
+		wb = (Excel.Workbook) app.ActiveWorkbook;
+		ws = (Excel.Worksheet) wb.ActiveSheet;
+		
+		CreateChart(ref ws);
+		
+		
+		Marshal.ReleaseComObject(ws);
+		Marshal.ReleaseComObject(wb);
+		Marshal.ReleaseComObject(app);
+		
+		Console.ReadKey();
+	}
+	
+	
+	public static void CreateChart(ref Excel.Worksheet ws)
+	{
+		Excel.Workbook wb;
+		
+		Excel.Series series;
+		Excel.Chart chart;
+		
+		wb = (Excel.Workbook)ws.Parent;
+		
+		Console.WriteLine(wb.Name);
+		
+		long lastrow = ws.UsedRange.Rows.Count;
+		long lastcol = ws.UsedRange.Columns.Count;
+		
+		Console.WriteLine("lastrow: {0}, lastcol: {1}", lastrow, lastcol);
+		
+		if (lastrow == 1)
+		{
+			Console.WriteLine("有效数据不足");
+			Console.ReadKey();
+			return;
+		}
+		
+		if (((Excel.ChartObjects)ws.ChartObjects()).Count >=1 )
+		{
+			Console.WriteLine("Chart num: {0}", ((Excel.ChartObjects)ws.ChartObjects()).Count);
+			((Excel.ChartObjects)ws.ChartObjects()).Delete();
+		}	
+		
+		for (int col=2; col<=lastcol; col++)
+		{
+			if (((Excel.Range)ws.Cells[1,col]).Value == null)
+			{
+				break;
+			}
+			
+			List<double> data = new List<double>();
+		
+			for (int row=2; row<=lastrow; row++)
+			{
+				
+				data.Add((double)((Excel.Range)ws.Cells[row,col]).Value);
+			}
+			
+			double mean = data.Average();
+			double sd = data.StandardDeviation();
+			double cv = sd / mean;
+			
+			string chartTitle = string.Format("{0} {1} Mean: {2:F2}, Std: {3:F2}, CV: {4:P2}", ws.Name, ((Excel.Range)ws.Cells[1,col]).Value, mean, sd, cv);
+			Console.WriteLine(chartTitle);
+
+			
+			chart = (Excel.Chart) wb.Charts.Add();
+			
+			chart.SetSourceData((Excel.Range) ws.Range[ws.Cells[2,col], ws.Cells[lastrow,col]]);
+			
+			chart.ChartType = Excel.XlChartType.xlLine;
+
+			// https://blog.csdn.net/dragonzoebai/article/details/8733116
+			chart.Location(Excel.XlChartLocation.xlLocationAsObject, ws.Name);
+			
+			// chart.HasLegend = false;
+			// chart.HasTitle = true;
+			// chart.ChartTitle.Text = chartTitle;
+			
+			// chart.ChartArea.Left = 44;
+			
+		}
+		
+		
+		
+		
+	}
+	
+	
+	public static double StandardDeviation(this IEnumerable<double> values)
+	{
+		// return population standard deviation
+		double avg = values.Average();
+		return Math.Sqrt(values.Average(v=>Math.Pow(v-avg,2)));
+	}
+	
+	
+}
