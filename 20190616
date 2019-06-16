@@ -106,7 +106,7 @@ namespace Excel折线图生成
                     }
                 }
 
-                // if only 1 data? sd will cause wrong?
+                
                 double mean = data.Average();
                 double sd = data.StandardDeviation();
                 double cv = sd / mean;
@@ -115,6 +115,28 @@ namespace Excel折线图生成
                 Console.WriteLine(chartTitle);
 
 
+                //固定均值，标准差设置
+                ws.Range["J1"].Offset[0,col-2].Value = ws.Cells[1, col].Value;
+                ws.Range["I2"].Value = "固定均值";
+                ws.Range["I3"].Value = "固定标准差";
+
+                if (ws.Range["J2"].Offset[0, col - 2].Value != null)
+                {
+                    mean = ws.Range["J2"].Offset[0, col - 2].Value;
+                }
+                else
+                {
+                    Console.WriteLine("未设置{0}的固定均值", ws.Cells[1, col].Value);
+                }
+
+                if (ws.Range["J3"].Offset[0, col - 2].Value != null)
+                {
+                    sd = ws.Range["J3"].Offset[0, col - 2].Value;
+                }
+                else
+                {
+                    Console.WriteLine("未设置{0}的固定标准差", ws.Cells[1, col].Value);
+                }
 
 
                 double[] meanarray = new double[lastrow - 1];
